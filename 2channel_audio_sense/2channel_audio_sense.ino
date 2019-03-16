@@ -77,7 +77,7 @@ int channelValues[CHANS];
 movingAvg audioAverages[CHANS] = {movingAvg(10), movingAvg(10)};
 
 
-int audioThreshold = 10;       //minimum channel value to indicate activity
+int audioThreshold = 5;       //minimum channel value to indicate activity
 int activeChannel = -1;        //currently active channel
 int currentChannel = -1;       //current audio source
 int prevChannel = -1;
@@ -107,7 +107,12 @@ void loop() {
     int audioValue = analogRead(i) - 512;
     audioValue = abs(audioValue);
     channelValues[i] = audioAverages[i].reading(audioValue);
+//    Serial.print("Channel: ");
+//    Serial.println(i);
+//    Serial.print("Value: ");
+//    Serial.println(channelValues[i]);
   }
+//  Serial.println("*************************");
   
   //find the first active channel - ignore all other active channels if multiple sources are broadcasting
   activeChannel = -1; //set active channel to -1 to start
