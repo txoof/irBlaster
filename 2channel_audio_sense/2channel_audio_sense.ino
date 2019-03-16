@@ -148,6 +148,7 @@ void loop() {
   if ((activeChannel < 0) and (lastChannelChange >= channelHoldTime) and (activeChannel != currentChannel)) {
     currentChannel = activeChannel;
     lastChannelChange = 0;
+    Serial.println("No active channel");
   }
   
   if (shutDownTimer >= delayTime and currentPowerState) {
@@ -178,5 +179,5 @@ void loop() {
 
   }
 
-  delay(2);
+  delay(20);
 }
