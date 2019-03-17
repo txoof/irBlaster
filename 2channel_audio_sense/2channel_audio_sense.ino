@@ -74,6 +74,7 @@ const int channelHoldTime = 2000; //time to wait before switching audio sources
 int audioChannels[CHANS] = {audioPin0, audioPin1}; //physical pins
 int channelValues[CHANS];
 
+#define SAMPLES 10
 movingAvg audioAverages[CHANS] = {movingAvg(10), movingAvg(10)};
 
 
