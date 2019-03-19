@@ -140,7 +140,7 @@ void setup() {
   }
 
   aSerial.setPrinter(Serial);
-  aSerial.setFilter(Level::vvv);
+  aSerial.setFilter(Level::vv);
   aSerial.pln("Audio sensing start");
   /* Uncomment the following line to disable the output. By defalut the ouput is on. */
   // aSerial.off();
