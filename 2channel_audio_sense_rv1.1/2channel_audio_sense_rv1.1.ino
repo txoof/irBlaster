@@ -1,12 +1,28 @@
 #include <elapsedMillis.h>    //measure elapsed time
 #include <movingAvg.h>    // moving average library
 #include <advancedSerial.h>   //advanced serial output for better debugging
-//#include
+#include <IRLibSendBase.h>    //We need the base code
+#include <IRLib_HashRaw.h>    //Only use raw sender
 
+//define the IR Sender
+IRsendRaw mySender;
+
+//IR Code Sequences
 // power on/off
 #define RAW_DATA_LEN 68
+uint16_t powerOn[RAW_DATA_LEN]={
+  8978, 4494, 522, 582, 550, 582, 570, 562, 
+  518, 586, 546, 586, 578, 554, 526, 578, 
+  554, 578, 574, 1662, 550, 1714, 518, 1718, 
+  578, 1658, 554, 578, 574, 1662, 550, 1714, 
+  522, 1714, 578, 554, 518, 1718, 578, 1658, 
+  554, 1710, 522, 1714, 550, 582, 518, 586, 
+  546, 586, 578, 1658, 554, 578, 542, 590, 
+  522, 582, 550, 582, 550, 1686, 550, 1714, 
+  526, 1710, 542, 1000};
 
-const uint16_t powerOff[RAW_DATA_LEN] = {
+
+uint16_t powerOnOff[RAW_DATA_LEN] = {
   8550, 4306, 530, 1606, 530, 566, 502, 1610,
   530, 566, 502, 574, 506, 1630, 506, 566,
   506, 1630, 506, 566, 502, 1610, 530, 566,
@@ -15,10 +31,9 @@ const uint16_t powerOff[RAW_DATA_LEN] = {
   506, 1606, 530, 1610, 530, 562, 538, 538,
   530, 542, 538, 1598, 538, 1570, 558, 542,
   538, 538, 530, 542, 538, 1598, 530, 1578,
-  558, 1578, 562, 1000
-};
+  558, 1578, 562, 1000};
 
-const uint16_t sourceCD[RAW_DATA_LEN] = {
+uint16_t sourceCD[RAW_DATA_LEN] = {
   8546, 4310, 558, 1578, 562, 538, 498, 1638,
   530, 542, 506, 570, 502, 1634, 502, 570,
   498, 1638, 534, 538, 498, 1638, 530, 542,
@@ -27,10 +42,9 @@ const uint16_t sourceCD[RAW_DATA_LEN] = {
   554, 1582, 558, 538, 510, 566, 502, 1606,
   554, 546, 502, 1610, 558, 1574, 554, 546,
   502, 570, 510, 1602, 526, 1610, 526, 574,
-  506, 1602, 526, 1000
-};
+  506, 1602, 526, 1000};
 
-const uint16_t sourceAUX[RAW_DATA_LEN] = {
+uint16_t sourceAUX[RAW_DATA_LEN] = {
   8550, 4310, 526, 1634, 506, 566, 502, 1634,
   506, 566, 502, 574, 506, 1626, 510, 566,
   506, 1630, 506, 566, 502, 1634, 506, 566,
@@ -39,10 +53,9 @@ const uint16_t sourceAUX[RAW_DATA_LEN] = {
   510, 1602, 526, 570, 510, 566, 502, 1634,
   502, 570, 502, 570, 510, 566, 502, 570,
   510, 562, 506, 1630, 506, 1630, 510, 562,
-  506, 1630, 510, 1000
-};
+  506, 1630, 510, 1000};
 
-const uint16_t sourceCDR[RAW_DATA_LEN] = {
+uint16_t sourceCDR[RAW_DATA_LEN] = {
   8550, 4306, 530, 1606, 534, 566, 502, 1606,
   534, 566, 502, 570, 510, 1602, 526, 570,
   510, 1602, 534, 566, 502, 1606, 534, 566,
@@ -51,12 +64,11 @@ const uint16_t sourceCDR[RAW_DATA_LEN] = {
   510, 1602, 526, 570, 510, 566, 502, 570,
   510, 1602, 526, 1610, 526, 1606, 534, 1602,
   534, 566, 502, 1610, 530, 1602, 534, 1602,
-  526, 574, 506, 1000
-};
+  526, 574, 506, 1000};
 
 
 //uint16_t* sources[] = {sourceCD, sourceAUX,  sourceCDR};
-const uint16_t *sources[3] = {sourceCD, sourceAUX, sourceCDR};
+uint16_t *sources[3] = {sourceCD, sourceAUX, sourceCDR};
 //dummy code place holder for array of remote instructions
 String sourcesSTR[] = {"sourceCD", "sourceAUX", "sourceCDR"};
 
@@ -179,18 +191,24 @@ void loop() {
   
 
   if (currentChannel != prevChannel) {    //if a channel change happened send appropriate signals
-    
-    if (currentChannel > -1) {    //change the channel if the change was to an active source
-      aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
-      // change channels here 
-    } else {
-      aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
-    }
 
+
+    //toggle power indicator light and send power on/off ir code
     if ((currentChannel > -1 and prevChannel < 0) or (currentChannel < 0 and prevChannel > -1)) {
       aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
       digitalWrite(statusLight, channelIsActive);
+      mySender.send(powerOnOff, RAW_DATA_LEN, 36);
+      delay(1000);   //delay 1000ms to wait for receiver to power up
     }
+
+
+    if (currentChannel > -1) {    //change the channel if the change was to an active source
+      aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+      mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
+      // change channels here 
+    } else {
+      aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+    }    
 
     prevChannel = currentChannel;   //record the channel change
   }
