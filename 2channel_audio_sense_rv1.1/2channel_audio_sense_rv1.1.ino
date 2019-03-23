@@ -66,19 +66,19 @@ uint16_t sourceCDR[RAW_DATA_LEN] = {
   534, 566, 502, 1610, 530, 1602, 534, 1602,
   526, 574, 506, 1000};
 
-
-//uint16_t* sources[] = {sourceCD, sourceAUX,  sourceCDR};
-uint16_t *sources[3] = {sourceCD, sourceAUX, sourceCDR};
+//Set up array of codes
+uint16_t *sources[3] = {sourceCD, sourceCDR, sourceAUX};
 //dummy code place holder for array of remote instructions
 String sourcesSTR[] = {"sourceCD", "sourceAUX", "sourceCDR"};
 
 
 const int audioPin0 = A0;     //Channel 0
 const int audioPin1 = A1;     //Channel 1
+const int debugPin = A2;      //when low, run in debug mode
 const int statusLight = 10;   //active channel indicator light
-const int audioThreshold = 5; //minimum level to be considered "active"
+const int audioThreshold = 8; //minimum level to be considered "active"
 const int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
-const long powerTimeout = 10000;    //amount of time to wait before powering off
+const long powerTimeout = 480000;    //amount of time to wait before powering off - 480,000 ms == 8 min
 elapsedMillis powerTimer;
 
 
@@ -86,10 +86,10 @@ elapsedMillis powerTimer;
 int audioChannels[CHANS] = {audioPin0, audioPin1};
 int channelValues[CHANS];
 
-const int SAMPLES = 300;
+const int SAMPLES = 300;    //this is the maximum before the loop begins crashing
 movingAvg audioAverages[CHANS] = {movingAvg(SAMPLES), movingAvg(SAMPLES)};    //array of moving average objects for smoothing analog input
 
-
+bool debugMode = false;   //turn on debug mode
 bool channelIsActive = false;   //true when one or more channels are active
 
 int currentChannel = -1;   //channel that is actively playing over speakers
@@ -99,7 +99,7 @@ elapsedMillis channelReleaseTimer;
 
 elapsedMillis heartBeat;
 
-int findActiveChannel() {   //returns first active channel in the array
+int findActiveChannel() {   //returns first active channel in the array or -1 if none are active
   int myChannel = -1;
   for (int i = 0; i < CHANS; i++) {
     if (channelValues[i] >= audioThreshold) {
@@ -109,21 +109,41 @@ int findActiveChannel() {   //returns first active channel in the array
   return myChannel;
 }
 
-
-
-
 void setup() {
   // put your setup code here, to run once:
   pinMode(statusLight, OUTPUT);
+  pinMode(debugPin, INPUT);
+
+  bool state = true;
+  for (int i=0; i < 20; i++) {
+    digitalWrite(statusLight, state);
+    state = !state;
+    delay(100);
+  }
+  
+
+  if (!digitalRead(debugPin))  {    //turn on debug mode if the debugPin is low
+    debugMode = true;
+  }
+
 
   // set all the timers to 0 to start
   powerTimer = 0;
   heartBeat = 0;
   channelReleaseTimer = 0;
 
-  Serial.begin(9600);
-  delay(2000); while (!Serial); //delay for serial to come online
+  if (debugMode) {
+    Serial.begin(9600);
+    delay(2000); //delay for serial to come online
 
+    aSerial.setPrinter(Serial);
+    aSerial.setFilter(Level::vvv);
+    aSerial.pln("Audio sensing start");
+
+  } else {
+     aSerial.off();
+  }
+  
   channelReleaseTimer = 0;    //set the release timer to 0
 
   for (int i = 0; i < CHANS; i++) { //init the moving average library THIS IS CRUCIAL! DO NOT SKIP THIS STEP!
@@ -131,11 +151,8 @@ void setup() {
     audioAverages[i].reset();
   }
 
-  aSerial.setPrinter(Serial);
-  aSerial.setFilter(Level::vvv);
-  aSerial.pln("Audio sensing start");
-  /* Uncomment the following line to disable the output. By defalut the ouput is on. */
-  // aSerial.off();
+
+  
 }
 
 void loop() {
@@ -145,9 +162,10 @@ void loop() {
     int audioValue = analogRead(i) - 512;   //voltage divider shifts all values + ~2.5v
     audioValue = abs(audioValue);   //abs is a macro use on own line
     channelValues[i] = audioAverages[i].reading(audioValue);    //store and update the moving average
-
-    //    aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
-    //    aSerial.vvvv().p("\t avg: ").pln(channelValues[i]);
+    if (heartBeat >= 250) {
+          aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
+          aSerial.vvvv().p("\t avg: ").pln(channelValues[i]);
+    }
 
     if (channelValues[i] >= audioThreshold) {
       channelIsActive = true;
@@ -183,7 +201,6 @@ void loop() {
     } 
     
   } else {    //no channel active - set active channel to < 0
-//    if (channelReleaseTimer >= channelRelease) {
     if (powerTimer >= powerTimeout) {
       currentChannel = findActiveChannel();   //this will return -1 if no channel is active1
     }
@@ -191,12 +208,12 @@ void loop() {
   
 
   if (currentChannel != prevChannel) {    //if a channel change happened send appropriate signals
-
-
     //toggle power indicator light and send power on/off ir code
     if ((currentChannel > -1 and prevChannel < 0) or (currentChannel < 0 and prevChannel > -1)) {
       aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
-      digitalWrite(statusLight, channelIsActive);
+      if (debugMode) {
+        digitalWrite(statusLight, channelIsActive);
+      }
       mySender.send(powerOnOff, RAW_DATA_LEN, 36);
       delay(1000);   //delay 1000ms to wait for receiver to power up
     }
@@ -215,9 +232,8 @@ void loop() {
 
 
   
-
+  // Heartbeat used to display coutndown data 
   if (heartBeat >= 500) {
-    
     heartBeat = 0;    //reset heartbeat
   }
 
