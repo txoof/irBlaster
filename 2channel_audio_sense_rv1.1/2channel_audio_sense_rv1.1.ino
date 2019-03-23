@@ -10,16 +10,16 @@ IRsendRaw mySender;
 //IR Code Sequences
 // power on/off
 #define RAW_DATA_LEN 68
-uint16_t powerOn[RAW_DATA_LEN]={
-  8978, 4494, 522, 582, 550, 582, 570, 562, 
-  518, 586, 546, 586, 578, 554, 526, 578, 
-  554, 578, 574, 1662, 550, 1714, 518, 1718, 
-  578, 1658, 554, 578, 574, 1662, 550, 1714, 
-  522, 1714, 578, 554, 518, 1718, 578, 1658, 
-  554, 1710, 522, 1714, 550, 582, 518, 586, 
-  546, 586, 578, 1658, 554, 578, 542, 590, 
-  522, 582, 550, 582, 550, 1686, 550, 1714, 
-  526, 1710, 542, 1000};
+//uint16_t powerOn[RAW_DATA_LEN]={
+//  8978, 4494, 522, 582, 550, 582, 570, 562, 
+//  518, 586, 546, 586, 578, 554, 526, 578, 
+//  554, 578, 574, 1662, 550, 1714, 518, 1718, 
+//  578, 1658, 554, 578, 574, 1662, 550, 1714, 
+//  522, 1714, 578, 554, 518, 1718, 578, 1658, 
+//  554, 1710, 522, 1714, 550, 582, 518, 586, 
+//  546, 586, 578, 1658, 554, 578, 542, 590, 
+//  522, 582, 550, 582, 550, 1686, 550, 1714, 
+//  526, 1710, 542, 1000};
 
 
 uint16_t powerOnOff[RAW_DATA_LEN] = {
@@ -68,6 +68,7 @@ uint16_t sourceCDR[RAW_DATA_LEN] = {
 
 //Set up array of codes
 uint16_t *sources[3] = {sourceCD, sourceCDR, sourceAUX};
+
 //dummy code place holder for array of remote instructions
 String sourcesSTR[] = {"sourceCD", "sourceAUX", "sourceCDR"};
 
@@ -77,6 +78,9 @@ const int audioPin1 = A1;     //Channel 1
 const int debugPin = A2;      //when low, run in debug mode
 const int statusLight = 10;   //active channel indicator light
 const int audioThreshold = 8; //minimum level to be considered "active"
+
+const int powerOnDelay = 7000;
+
 const int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
 const long powerTimeout = 6000;    //amount of time to wait before powering off - 480,000 ms == 8 min
 elapsedMillis powerTimer;
@@ -117,6 +121,15 @@ void flashStatus(int repeat=10, int wait=100) {
     delay(wait/2);
   }
   
+
+//broadcast an IR signal 
+void sendCode(uint16_t *code) {
+  int repeat = 20;
+  for (int i=0; i < repeat; i++) {
+    mySender.send(code, RAW_DATA_LEN, 36);
+    delay(1);
+  }
+  aSerial.vv().pln("sent code");
 }
 
 void setup() {
@@ -163,7 +176,6 @@ void setup() {
   }
 
 
-  
 }
 
 void loop() {
@@ -173,6 +185,7 @@ void loop() {
     int audioValue = analogRead(i) - 512;   //voltage divider shifts all values + ~2.5v
     audioValue = abs(audioValue);   //abs is a macro use on own line
     channelValues[i] = audioAverages[i].reading(audioValue);    //store and update the moving average
+    
     if (heartBeat >= 250) {
           aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
           aSerial.vvvv().p("\t avg: ").pln(channelValues[i]);
@@ -222,6 +235,7 @@ void loop() {
     //toggle power indicator light and send power on/off ir code
     if ((currentChannel > -1 and prevChannel < 0) or (currentChannel < 0 and prevChannel > -1)) {
       aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
+
       if (debugMode) {
         digitalWrite(statusLight, channelIsActive);
       } else {
@@ -233,14 +247,16 @@ void loop() {
         aSerial.v().pln("Send power on/off codes and wait 10s for receiver to power up");
         delay(10000);   //delay 1000ms to wait for receiver to power up
       }
+
     }
 
 
     if (currentChannel > -1) {    //change the channel if the change was to an active source
       aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+
       aSerial.v().p("Sending codes for channel: ").pln(currentChannel);//.pln(sourcesSTR[currentChannel]);
       mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
-      // change channels here 
+
     } else {
       aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
     }    
