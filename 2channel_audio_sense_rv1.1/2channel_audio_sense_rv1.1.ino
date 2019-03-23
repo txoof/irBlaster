@@ -78,7 +78,7 @@ const int debugPin = A2;      //when low, run in debug mode
 const int statusLight = 10;   //active channel indicator light
 const int audioThreshold = 8; //minimum level to be considered "active"
 const int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
-const long powerTimeout = 480000;    //amount of time to wait before powering off - 480,000 ms == 8 min
+const long powerTimeout = 6000;    //amount of time to wait before powering off - 480,000 ms == 8 min
 elapsedMillis powerTimer;
 
 
@@ -109,17 +109,28 @@ int findActiveChannel() {   //returns first active channel in the array or -1 if
   return myChannel;
 }
 
+void flashStatus(int repeat=10; int wait=100) {
+  for (int i=0; i < repeat; i++) {
+    digitalWrite(statusLight, true);
+    delay(wait);
+    digitalWrite(statusLight, false);
+    delay(wait/2);
+  }
+  
+}
+
 void setup() {
   // put your setup code here, to run once:
   pinMode(statusLight, OUTPUT);
   pinMode(debugPin, INPUT);
 
-  bool state = true;
-  for (int i=0; i < 20; i++) {
-    digitalWrite(statusLight, state);
-    state = !state;
-    delay(100);
-  }
+  flashStatus();
+//  bool state = true;
+//  for (int i=0; i < 20; i++) {
+//    digitalWrite(statusLight, state);
+//    state = !state;
+//    delay(100);
+//  }
   
 
   if (!digitalRead(debugPin))  {    //turn on debug mode if the debugPin is low
