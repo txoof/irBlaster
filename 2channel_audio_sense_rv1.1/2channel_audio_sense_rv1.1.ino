@@ -79,7 +79,7 @@ const int debugPin = A2;      //when low, run in debug mode
 const int statusLight = 10;   //active channel indicator light
 const int audioThreshold = 8; //minimum level to be considered "active"
 
-const int powerOnDelay = 7000;
+const int powerOnDelay = 10000;
 
 const int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
 const long powerTimeout = 6000;    //amount of time to wait before powering off - 480,000 ms == 8 min
@@ -120,7 +120,7 @@ void flashStatus(int repeat=10, int wait=100) {
     digitalWrite(statusLight, false);
     delay(wait/2);
   }
-  
+}
 
 //broadcast an IR signal 
 void sendCode(uint16_t *code) {
@@ -244,8 +244,8 @@ void loop() {
       
       mySender.send(powerOnOff, RAW_DATA_LEN, 36);
       if (channelIsActive) {
-        aSerial.v().pln("Send power on/off codes and wait 10s for receiver to power up");
-        delay(10000);   //delay 1000ms to wait for receiver to power up
+        aSerial.v().p("Send power on/off codes and wait ").p(powerOnDelay/1000).pln("s for receiver to power up");
+        delay(powerOnDelay);   //wait for receiver to power up
       }
 
     }
