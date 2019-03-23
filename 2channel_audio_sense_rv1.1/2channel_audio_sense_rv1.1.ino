@@ -109,7 +109,7 @@ int findActiveChannel() {   //returns first active channel in the array or -1 if
   return myChannel;
 }
 
-void flashStatus(int repeat=10; int wait=100) {
+void flashStatus(int repeat=10, int wait=100) {
   for (int i=0; i < repeat; i++) {
     digitalWrite(statusLight, true);
     delay(wait);
@@ -224,14 +224,21 @@ void loop() {
       aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
       if (debugMode) {
         digitalWrite(statusLight, channelIsActive);
+      } else {
+        flashStatus(5, 50);
       }
+      
       mySender.send(powerOnOff, RAW_DATA_LEN, 36);
-      delay(1000);   //delay 1000ms to wait for receiver to power up
+      if (channelIsActive) {
+        aSerial.v().pln("Send power on/off codes and wait 10s for receiver to power up");
+        delay(10000);   //delay 1000ms to wait for receiver to power up
+      }
     }
 
 
     if (currentChannel > -1) {    //change the channel if the change was to an active source
       aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+      aSerial.v().p("Sending codes for channel: ").pln(currentChannel);//.pln(sourcesSTR[currentChannel]);
       mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
       // change channels here 
     } else {
