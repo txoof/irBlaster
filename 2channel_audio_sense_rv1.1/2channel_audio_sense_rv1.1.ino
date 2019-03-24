@@ -4,6 +4,8 @@
 #include <IRLibSendBase.h>    //We need the base code
 #include <IRLib_HashRaw.h>    //Only use raw sender
 
+
+
 //define the IR Sender
 IRsendRaw mySender;
 
@@ -69,20 +71,17 @@ uint16_t sourceCDR[RAW_DATA_LEN] = {
 //Set up array of codes
 uint16_t *sources[3] = {sourceCD, sourceCDR, sourceAUX};
 
-//dummy code place holder for array of remote instructions
-String sourcesSTR[] = {"sourceCD", "sourceAUX", "sourceCDR"};
-
-
 const int audioPin0 = A0;     //Channel 0
 const int audioPin1 = A1;     //Channel 1
 const int debugPin = A2;      //when low, run in debug mode
 const int statusLight = 10;   //active channel indicator light
 const int audioThreshold = 8; //minimum level to be considered "active"
+elapsedMillis channelReleaseTimer;
 
 const int powerOnDelay = 10000;
 
-const int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
-const long powerTimeout = 6000;    //amount of time to wait before powering off - 480,000 ms == 8 min
+int channelRelease = 10000;     //amount of time to wait before releasing an inactive channel
+long powerTimeout = 480000;    //amount of time to wait before powering off - 480,000 ms == 8 min
 elapsedMillis powerTimer;
 
 
@@ -99,7 +98,7 @@ bool channelIsActive = false;   //true when one or more channels are active
 int currentChannel = -1;   //channel that is actively playing over speakers
 int prevChannel = -1;
 
-elapsedMillis channelReleaseTimer;
+
 
 elapsedMillis heartBeat;
 
@@ -113,7 +112,7 @@ int findActiveChannel() {   //returns first active channel in the array or -1 if
   return myChannel;
 }
 
-void flashStatus(int repeat=10, int wait=100) {
+void flashStatus(int repeat=10, int wait=25) {
   for (int i=0; i < repeat; i++) {
     digitalWrite(statusLight, true);
     delay(wait);
@@ -137,14 +136,7 @@ void setup() {
   pinMode(statusLight, OUTPUT);
   pinMode(debugPin, INPUT);
 
-  flashStatus();
-//  bool state = true;
-//  for (int i=0; i < 20; i++) {
-//    digitalWrite(statusLight, state);
-//    state = !state;
-//    delay(100);
-//  }
-  
+  flashStatus();    //indicate power on
 
   if (!digitalRead(debugPin))  {    //turn on debug mode if the debugPin is low
     debugMode = true;
@@ -162,7 +154,15 @@ void setup() {
 
     aSerial.setPrinter(Serial);
     aSerial.setFilter(Level::vvv);
-    aSerial.pln("Audio sensing start");
+    aSerial.pln("Audio sensing start in debug mode");
+    aSerial.pln("Version 0.1");
+    aSerial.pln("Decreasing channel release and timeout for debugging");
+    channelRelease = 5000;
+    powerTimeout = 6000;
+
+    //WTF? This totally breaks the code?! freezes after one loop
+//    aSerial.p("  channelRelease: ").pln(channelRelease);
+//    aSerial.p("  powerTimeout: ").pln(powerTimeout);
 
   } else {
      aSerial.off();
@@ -185,6 +185,7 @@ void loop() {
     int audioValue = analogRead(i) - 512;   //voltage divider shifts all values + ~2.5v
     audioValue = abs(audioValue);   //abs is a macro use on own line
     channelValues[i] = audioAverages[i].reading(audioValue);    //store and update the moving average
+
     
     if (heartBeat >= 250) {
           aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
