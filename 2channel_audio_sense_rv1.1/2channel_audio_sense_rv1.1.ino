@@ -80,8 +80,8 @@ elapsedMillis channelReleaseTimer;
 
 const int powerOnDelay = 10000;
 
-int channelRelease = 10000;     //amount of time to wait before releasing an inactive channel
-long powerTimeout = 480000;    //amount of time to wait before powering off - 480,000 ms == 8 min
+int channelRelease = 5000;     //amount of time to wait before releasing an inactive channel
+long powerTimeout = 6000;    //amount of time to wait before powering off - 480,000 ms == 8 min
 elapsedMillis powerTimer;
 
 
@@ -126,7 +126,7 @@ void sendCode(uint16_t *code) {
   int repeat = 20;
   for (int i=0; i < repeat; i++) {
     mySender.send(code, RAW_DATA_LEN, 36);
-    delay(1);
+    delay(5);
   }
   aSerial.vv().pln("sent code");
 }
@@ -156,9 +156,9 @@ void setup() {
     aSerial.setFilter(Level::vvv);
     aSerial.pln("Audio sensing start in debug mode");
     aSerial.pln("Version 0.1");
-    aSerial.pln("Decreasing channel release and timeout for debugging");
-    channelRelease = 5000;
-    powerTimeout = 6000;
+//    aSerial.pln("Decreasing channel release and timeout for debugging 5s, 6s");
+//    channelRelease = 5000;
+//    powerTimeout = 6000;
 
     //WTF? This totally breaks the code?! freezes after one loop
 //    aSerial.p("  channelRelease: ").pln(channelRelease);
@@ -243,7 +243,8 @@ void loop() {
         flashStatus(5, 50);
       }
       
-      mySender.send(powerOnOff, RAW_DATA_LEN, 36);
+//      mySender.send(powerOnOff, RAW_DATA_LEN, 36);
+      sendCode(powerOnOff);
       if (channelIsActive) {
         aSerial.v().p("Send power on/off codes and wait ").p(powerOnDelay/1000).pln("s for receiver to power up");
         delay(powerOnDelay);   //wait for receiver to power up
@@ -256,7 +257,8 @@ void loop() {
       aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
 
       aSerial.v().p("Sending codes for channel: ").pln(currentChannel);//.pln(sourcesSTR[currentChannel]);
-      mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
+//      mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
+      sendCode(sources[currentChannel]);
 
     } else {
       aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
