@@ -1,6 +1,104 @@
-#include <advancedSerial.h>   //advanced serial output for better debugging
 #include <movingAvg.h>    // moving average library
 #include <elapsedMillis.h>    //measure elapsed time
+#include <advancedSerial.h>   //advanced serial output for better debugging
+#include <IRLibSendBase.h>    //We need the base code
+#include <IRLib_HashRaw.h>    //Only use raw sender
+
+// ====REMOTE CODES====
+//define the IR Sender
+IRsendRaw mySender;
+
+#define RAW_DATA_LEN 68
+uint16_t powerOnOff[RAW_DATA_LEN] = {
+  8550, 4306, 530, 1606, 530, 566, 502, 1610,
+  530, 566, 502, 574, 506, 1630, 506, 566,
+  506, 1630, 506, 566, 502, 1610, 530, 566,
+  502, 1634, 506, 1606, 530, 570, 498, 1634,
+  506, 570, 510, 562, 506, 566, 502, 1634,
+  506, 1606, 530, 1610, 530, 562, 538, 538,
+  530, 542, 538, 1598, 538, 1570, 558, 542,
+  538, 538, 530, 542, 538, 1598, 530, 1578,
+  558, 1578, 562, 1000};
+
+uint16_t sourceCD[RAW_DATA_LEN] = {
+  8546, 4310, 558, 1578, 562, 538, 498, 1638,
+  530, 542, 506, 570, 502, 1634, 502, 570,
+  498, 1638, 534, 538, 498, 1638, 530, 542,
+  506, 1606, 554, 1582, 558, 538, 510, 1602,
+  554, 546, 506, 566, 502, 570, 510, 1602,
+  554, 1582, 558, 538, 510, 566, 502, 1606,
+  554, 546, 502, 1610, 558, 1574, 554, 546,
+  502, 570, 510, 1602, 526, 1610, 526, 574,
+  506, 1602, 526, 1000};
+
+uint16_t sourceAUX[RAW_DATA_LEN] = {
+  8550, 4310, 526, 1634, 506, 566, 502, 1634,
+  506, 566, 502, 574, 506, 1626, 510, 566,
+  506, 1630, 506, 566, 502, 1634, 506, 566,
+  502, 1634, 506, 1606, 530, 566, 506, 1630,
+  506, 566, 502, 1634, 506, 1630, 506, 1630,
+  510, 1602, 526, 570, 510, 566, 502, 1634,
+  502, 570, 502, 570, 510, 566, 502, 570,
+  510, 562, 506, 1630, 506, 1630, 510, 562,
+  506, 1630, 510, 1000};
+
+uint16_t sourceCDR[RAW_DATA_LEN] = {
+  8550, 4306, 530, 1606, 534, 566, 502, 1606,
+  534, 566, 502, 570, 510, 1602, 526, 570,
+  510, 1602, 534, 566, 502, 1606, 534, 566,
+  506, 1602, 530, 1606, 534, 566, 502, 1610,
+  530, 570, 498, 574, 506, 566, 502, 570,
+  510, 1602, 526, 570, 510, 566, 502, 570,
+  510, 1602, 526, 1610, 526, 1606, 534, 1602,
+  534, 566, 502, 1610, 530, 1602, 534, 1602,
+  526, 574, 506, 1000};
+
+//Set up array of codes
+uint16_t sources[4] = {powerOnOff, sourceCD, sourceCDR, sourceAUX};
+
+//const uint16_t sources[3][RAW_DATA_LEN] = {
+////  {8550, 4306, 530, 1606, 530, 566, 502, 1610, //POWER ON/OFF
+////  530, 566, 502, 574, 506, 1630, 506, 566,
+////  506, 1630, 506, 566, 502, 1610, 530, 566,
+////  502, 1634, 506, 1606, 530, 570, 498, 1634,
+////  506, 570, 510, 562, 506, 566, 502, 1634,
+////  506, 1606, 530, 1610, 530, 562, 538, 538,
+////  530, 542, 538, 1598, 538, 1570, 558, 542,
+////  538, 538, 530, 542, 538, 1598, 530, 1578,
+////  558, 1578, 562, 1000}, 
+//
+//  {8546, 4310, 558, 1578, 562, 538, 498, 1638, //sourceCD
+//  530, 542, 506, 570, 502, 1634, 502, 570,
+//  498, 1638, 534, 538, 498, 1638, 530, 542,
+//  506, 1606, 554, 1582, 558, 538, 510, 1602,
+//  554, 546, 506, 566, 502, 570, 510, 1602,
+//  554, 1582, 558, 538, 510, 566, 502, 1606,
+//  554, 546, 502, 1610, 558, 1574, 554, 546,
+//  502, 570, 510, 1602, 526, 1610, 526, 574,
+//  506, 1602, 526, 1000},
+//
+//  {8550, 4306, 530, 1606, 534, 566, 502, 1606,  //sourceCDR
+//  534, 566, 502, 570, 510, 1602, 526, 570,
+//  510, 1602, 534, 566, 502, 1606, 534, 566,
+//  506, 1602, 530, 1606, 534, 566, 502, 1610,
+//  530, 570, 498, 574, 506, 566, 502, 570,
+//  510, 1602, 526, 570, 510, 566, 502, 570,
+//  510, 1602, 526, 1610, 526, 1606, 534, 1602,
+//  534, 566, 502, 1610, 530, 1602, 534, 1602,
+//  526, 574, 506, 1000},
+//
+//  {8550, 4310, 526, 1634, 506, 566, 502, 1634,  //sourceAUX
+//  506, 566, 502, 574, 506, 1626, 510, 566,
+//  506, 1630, 506, 566, 502, 1634, 506, 566,
+//  502, 1634, 506, 1606, 530, 566, 506, 1630,
+//  506, 566, 502, 1634, 506, 1630, 506, 1630,
+//  510, 1602, 526, 570, 510, 566, 502, 1634,
+//  502, 570, 502, 570, 510, 566, 502, 570,
+//  510, 562, 506, 1630, 506, 1630, 510, 562,
+//  506, 1630, 510, 1000}
+//  
+//} ;
+
 
 // ====PIN ASSIGNMENTS====
 const int audioPin1 = A1;     //Channel 1
@@ -27,9 +125,11 @@ long channelReleaseTimeOut = 5000;
 long powerTimeOut = 10000;
 int counter = 0;
 int relTime = 0;      //variable for holding release time remaining
+int powerDelay = 10000;     //ms delay to wait 
 const int heartBeat = 500;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
+
 
 
 //   ====FUNCTIONS====
@@ -53,6 +153,26 @@ int findActiveChannel() {   //returns first active channel in the array or -1 if
   }
   return myChannel;
 }
+
+//broadcast an IR signal 
+//void sendCode(uint16_t code) {
+//void sendCode() {
+//  int repeat = 20;
+//  for (int i=0; i < repeat; i++) {
+////    mySender.send(powerOnOff, RAW_DATA_LEN, 36);
+//    Serial.println(i);  
+//    delay(5);
+//  }
+//  aSerial.vv().pln("   sent code");
+//}
+
+void sendCode(int mySource) {
+  for (int i=0; i < 20; i++) {
+    Serial.println(i);
+    mySender.send(powerOnOff,RAW_DATA_LEN,36);    
+  }
+}
+
 void setup() {
   delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
   flashStatus(5, 100);
@@ -76,7 +196,6 @@ void setup() {
     aSerial.setFilter(Level::vvv);
   
     aSerial.pln("sketch starting");
-    delay(500);
   } //end if debug mode
 
   for (int i=0; i < CHANNELS; i++) { //init and reset the moving averages
@@ -91,6 +210,8 @@ void setup() {
 }
 
 void loop() {
+//  aSerial.v().pln(powerTimer);
+//  sendCode(sources[0]);
   int audioValue = 0;
   int activeChannel = 0;
 
@@ -134,39 +255,49 @@ void loop() {
       channelReleaseTimer = 0;
       powerTimer = 0;
     }
-  }       //else channel is changed
+  }       //END else find active channel
 
   if (currentChannel > 0) {      //reset the power timeout 
     powerTimer = 0;
   }  
 
   if (previousChannel != currentChannel) { //check for a channel change and send codes
-    aSerial.vvvv().pln("channel change detected");
+    aSerial.vvv().pln("channel change detected");
     if (previousChannel == 0) {
       digitalWrite(statusLight, true);
       aSerial.vv().pln("Power state change - send power on code");
+//      sendCode(0);     //send power on/off code ///WTF this breaks the sketch completely?
+//      for (int i=0; i < 20; i++) {
+//        Serial.println(i);
+//        mySender.send(powerOnOff,RAW_DATA_LEN,36);    
+//        delay(5);
+//      }
       aSerial.vv().pln("delay for time to allow receiver to power up");
+      delay(powerDelay);
+      
     }
 
     if (currentChannel < 1 and powerTimer >= powerTimeOut) {
       digitalWrite(statusLight, false);
       aSerial.vv().pln("Power state change - send power off code");
+//      sendCode(0);     //send power on/off code
+
       previousChannel = currentChannel;
     }
 
     if (currentChannel > 0) {
       aSerial.vv().p("Send code for switch to channel: ").pln(currentChannel);
+//      sendCode(sources[currentChannel]);      //send code for this channel    
       previousChannel = currentChannel;     //set these equal to prevent power flip-flopping
+
     }
   } //END check for channel change
 
-  
   if (counter >= heartBeat) {
     aSerial.vvv().pln("heartbeat\n");
-//    aSerial.vvv().p("  currentChannel  :").pln(currentChannel);
     counter = 0;
   }
   counter = counter + 1;
  
   delay(2);
-}
+} 
