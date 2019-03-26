@@ -24,8 +24,9 @@ const int audioThreshold = 10;      //minimum value for an "active" channel
 
 //  ====TIMERS===
 long channelReleaseTimeOut = 5000;
-long powerTimeOut = 6000;
+long powerTimeOut = 10000;
 int counter = 0;
+int relTime = 0;      //variable for holding release time remaining
 const int heartBeat = 500;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
@@ -75,7 +76,6 @@ void setup() {
     aSerial.setFilter(Level::vvv);
   
     aSerial.pln("sketch starting");
-    aSerial.pln(debugMode);
     delay(500);
   } //end if debug mode
 
@@ -84,6 +84,7 @@ void setup() {
     audioAverages[i].reset();
   }
 
+  powerTimer = powerTimeOut +1;        //ensure that powerstate can immediately be changed
   channelReleaseTimer = channelReleaseTimeOut + 1;      //ensure that channel can be released immediately on startup
 
 
@@ -93,7 +94,7 @@ void loop() {
   int audioValue = 0;
   int activeChannel = 0;
 
-  int relTime = 0;
+ 
   
   for (int i=0; i < CHANNELS; i++) { //sample channels
     if (i > 0) {
@@ -116,19 +117,22 @@ void loop() {
 
   if (channelValues[currentChannel] >= audioThreshold) {     //reset the channel release timer if the channel is active
     channelReleaseTimer = 0;
+    powerTimer = 0;
   } else {      //else find the first active channel
-    activeChannel = findActiveChannel();
+    activeChannel = findActiveChannel(); 
+    
+    // DEBUGGING - show countdown to channel release
     if (channelReleaseTimer < channelReleaseTimeOut and counter >= 500) {
       aSerial.vvv().p("channel: ").p(currentChannel).pln(" inactive");
-      relTime = channelReleaseTimeOut - channelReleaseTimer;
-      aSerial.vvv().p("  releasing in: ").p((relTime)).pln("ms");  
-    }
+      relTime = (channelReleaseTimeOut - channelReleaseTimer);
+      aSerial.vvv().p("  releasing in: ").p(channelReleaseTimeOut - channelReleaseTimer).pln("ms");  
+    } //END DEBUGGING
     
     if (activeChannel != currentChannel and channelReleaseTimer >= channelReleaseTimeOut) {     //change the channel
       aSerial.v().p("Changing channel from: ").p(currentChannel).p(" to: ").pln(activeChannel);
-      aSerial.v().p("previous channel == ").pln(previousChannel);
       currentChannel = activeChannel;
       channelReleaseTimer = 0;
+      powerTimer = 0;
     }
   }       //else channel is changed
 
@@ -138,20 +142,23 @@ void loop() {
 
   if (previousChannel != currentChannel) { //check for a channel change and send codes
     aSerial.vvvv().pln("channel change detected");
-    if ((previousChannel == 0 or currentChannel == 0) and powerTimer >= powerTimeOut){      //detect a power state change
-      aSerial.vv().pln("Power state change - send power on/off code");
-      aSerial.vv().pln("  delaying for some time to allow the receiver to power up");
-      previousChannel = currentChannel;     //set these equal to prevent power flip-flopping
-    } 
-
-    if (currentChannel > 0) {
-      aSerial.vv().p("  Send code for switch to channel: ").pln(currentChannel);
-      previousChannel = currentChannel;     //set these equal to prevent power flip-flopping
+    if (previousChannel == 0) {
+      digitalWrite(statusLight, true);
+      aSerial.vv().pln("Power state change - send power on code");
+      aSerial.vv().pln("delay for time to allow receiver to power up");
     }
 
-    //This may need to move elsewhere - 
-    
-  }
+    if (currentChannel < 1 and powerTimer >= powerTimeOut) {
+      digitalWrite(statusLight, false);
+      aSerial.vv().pln("Power state change - send power off code");
+      previousChannel = currentChannel;
+    }
+
+    if (currentChannel > 0) {
+      aSerial.vv().p("Send code for switch to channel: ").pln(currentChannel);
+      previousChannel = currentChannel;     //set these equal to prevent power flip-flopping
+    }
+  } //END check for channel change
 
   
   if (counter >= heartBeat) {
