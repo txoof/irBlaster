@@ -18,7 +18,8 @@ uint16_t powerOnOff[RAW_DATA_LEN] = {
   506, 1606, 530, 1610, 530, 562, 538, 538,
   530, 542, 538, 1598, 538, 1570, 558, 542,
   538, 538, 530, 542, 538, 1598, 530, 1578,
-  558, 1578, 562, 1000};
+  558, 1578, 562, 1000
+};
 
 uint16_t sourceCD[RAW_DATA_LEN] = {
   8546, 4310, 558, 1578, 562, 538, 498, 1638,
@@ -29,7 +30,8 @@ uint16_t sourceCD[RAW_DATA_LEN] = {
   554, 1582, 558, 538, 510, 566, 502, 1606,
   554, 546, 502, 1610, 558, 1574, 554, 546,
   502, 570, 510, 1602, 526, 1610, 526, 574,
-  506, 1602, 526, 1000};
+  506, 1602, 526, 1000
+};
 
 uint16_t sourceAUX[RAW_DATA_LEN] = {
   8550, 4310, 526, 1634, 506, 566, 502, 1634,
@@ -40,7 +42,8 @@ uint16_t sourceAUX[RAW_DATA_LEN] = {
   510, 1602, 526, 570, 510, 566, 502, 1634,
   502, 570, 502, 570, 510, 566, 502, 570,
   510, 562, 506, 1630, 506, 1630, 510, 562,
-  506, 1630, 510, 1000};
+  506, 1630, 510, 1000
+};
 
 uint16_t sourceCDR[RAW_DATA_LEN] = {
   8550, 4306, 530, 1606, 534, 566, 502, 1606,
@@ -51,7 +54,8 @@ uint16_t sourceCDR[RAW_DATA_LEN] = {
   510, 1602, 526, 570, 510, 566, 502, 570,
   510, 1602, 526, 1610, 526, 1606, 534, 1602,
   534, 566, 502, 1610, 530, 1602, 534, 1602,
-  526, 574, 506, 1000};
+  526, 574, 506, 1000
+};
 
 //Set up array of codes
 uint16_t sources[4] = {powerOnOff, sourceCD, sourceCDR, sourceAUX};
@@ -65,7 +69,7 @@ uint16_t sources[4] = {powerOnOff, sourceCD, sourceCDR, sourceAUX};
 ////  506, 1606, 530, 1610, 530, 562, 538, 538,
 ////  530, 542, 538, 1598, 538, 1570, 558, 542,
 ////  538, 538, 530, 542, 538, 1598, 530, 1578,
-////  558, 1578, 562, 1000}, 
+////  558, 1578, 562, 1000},
 //
 //  {8546, 4310, 558, 1578, 562, 538, 498, 1638, //sourceCD
 //  530, 542, 506, 570, 502, 1634, 502, 570,
@@ -96,7 +100,7 @@ uint16_t sources[4] = {powerOnOff, sourceCD, sourceCDR, sourceAUX};
 //  502, 570, 502, 570, 510, 566, 502, 570,
 //  510, 562, 506, 1630, 506, 1630, 510, 562,
 //  506, 1630, 510, 1000}
-//  
+//
 //} ;
 
 
@@ -125,7 +129,7 @@ long channelReleaseTimeOut = 5000;
 long powerTimeOut = 10000;
 int counter = 0;
 int relTime = 0;      //variable for holding release time remaining
-int powerDelay = 10000;     //ms delay to wait 
+int powerDelay = 10000;     //ms delay to wait
 const int heartBeat = 500;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
@@ -133,12 +137,12 @@ elapsedMillis powerTimer = 0;
 
 
 //   ====FUNCTIONS====
-void flashStatus(int repeat=10, int wait=25) {      //flash status light
-  for (int i=0; i < repeat; i++) {
+void flashStatus(int repeat = 10, int wait = 25) {  //flash status light
+  for (int i = 0; i < repeat; i++) {
     digitalWrite(statusLight, true);
     delay(wait);
     digitalWrite(statusLight, false);
-    delay(wait/2);
+    delay(wait / 2);
   }
 }
 
@@ -154,34 +158,34 @@ int findActiveChannel() {   //returns first active channel in the array or -1 if
   return myChannel;
 }
 
-//broadcast an IR signal 
+//broadcast an IR signal
 //void sendCode(uint16_t code) {
 //void sendCode() {
 //  int repeat = 20;
 //  for (int i=0; i < repeat; i++) {
 ////    mySender.send(powerOnOff, RAW_DATA_LEN, 36);
-//    Serial.println(i);  
+//    Serial.println(i);
 //    delay(5);
 //  }
 //  aSerial.vv().pln("   sent code");
 //}
 
 void sendCode(int mySource) {
-  for (int i=0; i < 20; i++) {
+  for (int i = 0; i < 20; i++) {
     Serial.println(i);
-    mySender.send(powerOnOff,RAW_DATA_LEN,36);    
+    mySender.send(sources[mySource], RAW_DATA_LEN, 36);
+    delay(10);
   }
 }
 
 void setup() {
   delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
-  flashStatus(5, 100);
   //  ====PIN SETUP====
   pinMode(statusLight, OUTPUT);
   pinMode(debugPin, INPUT);
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
-  
+
   bool debugMode = false;
 
   if (!digitalRead(debugPin)) {
@@ -191,35 +195,38 @@ void setup() {
   if (debugMode) {
     Serial.begin(9600);
     delay(2000); //delay for serial to come online
-  
-    aSerial.setPrinter(Serial);
-    aSerial.setFilter(Level::vvv);
-  
-    aSerial.pln("sketch starting");
-  } //end if debug mode
 
-  for (int i=0; i < CHANNELS; i++) { //init and reset the moving averages
+  
+
+  aSerial.setPrinter(Serial);
+  aSerial.setFilter(Level::vvv);
+
+  aSerial.pln("sketch starting");
+} //end if debug mode
+
+  for (int i = 0; i < CHANNELS; i++) { //init and reset the moving averages
     audioAverages[i].begin();
     audioAverages[i].reset();
   }
-
-  powerTimer = powerTimeOut +1;        //ensure that powerstate can immediately be changed
+  
+  powerTimer = powerTimeOut + 1;       //ensure that powerstate can immediately be changed
   channelReleaseTimer = channelReleaseTimeOut + 1;      //ensure that channel can be released immediately on startup
+  flashStatus(5, 100);
 
 
 }
 
 void loop() {
-//  aSerial.v().pln(powerTimer);
-//  sendCode(sources[0]);
+  //  aSerial.v().pln(powerTimer);
+  //  sendCode(sources[0]);
   int audioValue = 0;
   int activeChannel = 0;
 
- 
-  
-  for (int i=0; i < CHANNELS; i++) { //sample channels
+
+
+  for (int i = 0; i < CHANNELS; i++) { //sample channels
     if (i > 0) {
-      int audioValue = analogRead(i) - 512; //voltage divider on amp circut shifts all values + ~2.5V
+      audioValue = analogRead(i) - 512; //voltage divider on amp circut shifts all values + ~2.5V
       audioValue = abs(audioValue);     //for some reason abs() is a macro and needs to be on its own line
       channelValues[i] = audioAverages[i].reading(audioValue);    //update and store the moving average for each channel
     }
@@ -240,15 +247,15 @@ void loop() {
     channelReleaseTimer = 0;
     powerTimer = 0;
   } else {      //else find the first active channel
-    activeChannel = findActiveChannel(); 
-    
+    activeChannel = findActiveChannel();
+
     // DEBUGGING - show countdown to channel release
     if (channelReleaseTimer < channelReleaseTimeOut and counter >= 500) {
       aSerial.vvv().p("channel: ").p(currentChannel).pln(" inactive");
       relTime = (channelReleaseTimeOut - channelReleaseTimer);
-      aSerial.vvv().p("  releasing in: ").p(channelReleaseTimeOut - channelReleaseTimer).pln("ms");  
+      aSerial.vvv().p("  releasing in: ").p(channelReleaseTimeOut - channelReleaseTimer).pln("ms");
     } //END DEBUGGING
-    
+
     if (activeChannel != currentChannel and channelReleaseTimer >= channelReleaseTimeOut) {     //change the channel
       aSerial.v().p("Changing channel from: ").p(currentChannel).p(" to: ").pln(activeChannel);
       currentChannel = activeChannel;
@@ -257,37 +264,33 @@ void loop() {
     }
   }       //END else find active channel
 
-  if (currentChannel > 0) {      //reset the power timeout 
+  if (currentChannel > 0) {      //reset the power timeout
     powerTimer = 0;
-  }  
+  }
 
   if (previousChannel != currentChannel) { //check for a channel change and send codes
-    aSerial.vvv().pln("channel change detected");
+    aSerial.vvvv().pln("channel change detected");
     if (previousChannel == 0) {
       digitalWrite(statusLight, true);
       aSerial.vv().pln("Power state change - send power on code");
-//      sendCode(0);     //send power on/off code ///WTF this breaks the sketch completely?
-//      for (int i=0; i < 20; i++) {
-//        Serial.println(i);
-//        mySender.send(powerOnOff,RAW_DATA_LEN,36);    
-//        delay(5);
-//      }
+      
+      sendCode(0);     //send power on/off code ///WTF this breaks the sketch completely?
       aSerial.vv().pln("delay for time to allow receiver to power up");
       delay(powerDelay);
-      
+
     }
 
     if (currentChannel < 1 and powerTimer >= powerTimeOut) {
       digitalWrite(statusLight, false);
       aSerial.vv().pln("Power state change - send power off code");
-//      sendCode(0);     //send power on/off code
+      //      sendCode(0);     //send power on/off code
 
       previousChannel = currentChannel;
     }
 
     if (currentChannel > 0) {
       aSerial.vv().p("Send code for switch to channel: ").pln(currentChannel);
-//      sendCode(sources[currentChannel]);      //send code for this channel    
+      //      sendCode(sources[currentChannel]);      //send code for this channel
       previousChannel = currentChannel;     //set these equal to prevent power flip-flopping
 
     }
@@ -298,6 +301,6 @@ void loop() {
     counter = 0;
   }
   counter = counter + 1;
- 
+
   delay(2);
-} 
+}

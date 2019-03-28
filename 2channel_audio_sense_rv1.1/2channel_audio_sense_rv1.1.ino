@@ -127,6 +127,7 @@ void sendCode(uint16_t *code) {
   for (int i=0; i < repeat; i++) {
     mySender.send(code, RAW_DATA_LEN, 36);
     delay(5);
+    Serial.println(i);
   }
   aSerial.vv().pln("sent code");
 }
@@ -179,100 +180,101 @@ void setup() {
 }
 
 void loop() {
-
-  channelIsActive = false;
-  for (int i = 0; i < CHANS; i++) { //begin sampling
-    int audioValue = analogRead(i) - 512;   //voltage divider shifts all values + ~2.5v
-    audioValue = abs(audioValue);   //abs is a macro use on own line
-    channelValues[i] = audioAverages[i].reading(audioValue);    //store and update the moving average
-
-    
-    if (heartBeat >= 250) {
-          aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
-          aSerial.vvvv().p("\t avg: ").pln(channelValues[i]);
-    }
-
-    if (channelValues[i] >= audioThreshold) {
-      channelIsActive = true;
-    }
-  }   //end sampling
-
-
-  // analize active channels
-  if (channelIsActive) {    //begin analysis if there is an active channel
-    int activeChannel = findActiveChannel();
-
-    //current channel is inactive state immediately switch on
-    if (currentChannel < 0) {
-      currentChannel = activeChannel;
-    }
-
-    //currentChannel is still active and the audio threshold is high enough, reset the release timer
-    if (channelValues[currentChannel] >= audioThreshold) {   //if the current channel is still active, ignore other channels
-      channelReleaseTimer = 0;
-      powerTimer = 0;
-    }
-
-    //activeChannel has changed, check to see if the release timer has expired
-    if (activeChannel != currentChannel and channelReleaseTimer > 100) {    //delay 100ms before attempting to capture an inactive channel
-      if (channelReleaseTimer >= channelRelease) {    //if the timer has expired, capture the inactive channel
-        aSerial.vv().p("Capturing channel: ").p(currentChannel).p(" due to inactivivity and switching to channel: ").pln(activeChannel);
-        currentChannel = activeChannel;
-      } else {
-        if (heartBeat >= 500) {
-          aSerial.vv().p("Releasing inactive channel: ").p(currentChannel).p(" in ").p(channelRelease - channelReleaseTimer).pln(" ms");
-        }
-      }
-    } 
-    
-  } else {    //no channel active - set active channel to < 0
-    if (powerTimer >= powerTimeout) {
-      currentChannel = findActiveChannel();   //this will return -1 if no channel is active1
-    }
-  }
-  
-
-  if (currentChannel != prevChannel) {    //if a channel change happened send appropriate signals
-    //toggle power indicator light and send power on/off ir code
-    if ((currentChannel > -1 and prevChannel < 0) or (currentChannel < 0 and prevChannel > -1)) {
-      aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
-
-      if (debugMode) {
-        digitalWrite(statusLight, channelIsActive);
-      } else {
-        flashStatus(5, 50);
-      }
-      
-//      mySender.send(powerOnOff, RAW_DATA_LEN, 36);
-      sendCode(powerOnOff);
-      if (channelIsActive) {
-        aSerial.v().p("Send power on/off codes and wait ").p(powerOnDelay/1000).pln("s for receiver to power up");
-        delay(powerOnDelay);   //wait for receiver to power up
-      }
-
-    }
-
-
-    if (currentChannel > -1) {    //change the channel if the change was to an active source
-      aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
-
-      aSerial.v().p("Sending codes for channel: ").pln(currentChannel);//.pln(sourcesSTR[currentChannel]);
-//      mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
-      sendCode(sources[currentChannel]);
-
-    } else {
-      aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
-    }    
-
-    prevChannel = currentChannel;   //record the channel change
-  }
-
-
-  
-  // Heartbeat used to display coutndown data 
-  if (heartBeat >= 500) {
-    heartBeat = 0;    //reset heartbeat
-  }
+  Serial.println(powerTimer);
+  sendCode(sources[0]);
+//  channelIsActive = false;
+//  for (int i = 0; i < CHANS; i++) { //begin sampling
+//    int audioValue = analogRead(i) - 512;   //voltage divider shifts all values + ~2.5v
+//    audioValue = abs(audioValue);   //abs is a macro use on own line
+//    channelValues[i] = audioAverages[i].reading(audioValue);    //store and update the moving average
+//
+//    
+//    if (heartBeat >= 250) {
+//          aSerial.vvvv().p("Channel ").p(i).p(" value: ").pln(audioValue);
+//          aSerial.vvvv().p("\t avg: ").pln(channelValues[i]);
+//    }
+//
+//    if (channelValues[i] >= audioThreshold) {
+//      channelIsActive = true;
+//    }
+//  }   //end sampling
+//
+//
+//  // analize active channels
+//  if (channelIsActive) {    //begin analysis if there is an active channel
+//    int activeChannel = findActiveChannel();
+//
+//    //current channel is inactive state immediately switch on
+//    if (currentChannel < 0) {
+//      currentChannel = activeChannel;
+//    }
+//
+//    //currentChannel is still active and the audio threshold is high enough, reset the release timer
+//    if (channelValues[currentChannel] >= audioThreshold) {   //if the current channel is still active, ignore other channels
+//      channelReleaseTimer = 0;
+//      powerTimer = 0;
+//    }
+//
+//    //activeChannel has changed, check to see if the release timer has expired
+//    if (activeChannel != currentChannel and channelReleaseTimer > 100) {    //delay 100ms before attempting to capture an inactive channel
+//      if (channelReleaseTimer >= channelRelease) {    //if the timer has expired, capture the inactive channel
+//        aSerial.vv().p("Capturing channel: ").p(currentChannel).p(" due to inactivivity and switching to channel: ").pln(activeChannel);
+//        currentChannel = activeChannel;
+//      } else {
+//        if (heartBeat >= 500) {
+//          aSerial.vv().p("Releasing inactive channel: ").p(currentChannel).p(" in ").p(channelRelease - channelReleaseTimer).pln(" ms");
+//        }
+//      }
+//    } 
+//    
+//  } else {    //no channel active - set active channel to < 0
+//    if (powerTimer >= powerTimeout) {
+//      currentChannel = findActiveChannel();   //this will return -1 if no channel is active1
+//    }
+//  }
+//  
+//
+//  if (currentChannel != prevChannel) {    //if a channel change happened send appropriate signals
+//    //toggle power indicator light and send power on/off ir code
+//    if ((currentChannel > -1 and prevChannel < 0) or (currentChannel < 0 and prevChannel > -1)) {
+//      aSerial.v().p("Setting power-on state to: ").pln(channelIsActive);
+//
+//      if (debugMode) {
+//        digitalWrite(statusLight, channelIsActive);
+//      } else {
+//        flashStatus(5, 50);
+//      }
+//      
+////      mySender.send(powerOnOff, RAW_DATA_LEN, 36);
+//      sendCode(powerOnOff);
+//      if (channelIsActive) {
+//        aSerial.v().p("Send power on/off codes and wait ").p(powerOnDelay/1000).pln("s for receiver to power up");
+//        delay(powerOnDelay);   //wait for receiver to power up
+//      }
+//
+//    }
+//
+//
+//    if (currentChannel > -1) {    //change the channel if the change was to an active source
+//      aSerial.v().p("Channel changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+//
+//      aSerial.v().p("Sending codes for channel: ").pln(currentChannel);//.pln(sourcesSTR[currentChannel]);
+////      mySender.send(sources[currentChannel], RAW_DATA_LEN, 36);
+//      sendCode(sources[currentChannel]);
+//
+//    } else {
+//      aSerial.v().p("Input sources became inactive and changed from: ").p(prevChannel).p(" to: ").pln(currentChannel);
+//    }    
+//
+//    prevChannel = currentChannel;   //record the channel change
+//  }
+//
+//
+//  
+//  // Heartbeat used to display coutndown data 
+//  if (heartBeat >= 500) {
+//    heartBeat = 0;    //reset heartbeat
+//  }
 
   delay(2);
 }
