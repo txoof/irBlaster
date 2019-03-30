@@ -7,7 +7,7 @@
 //define the IR Sender
 IRsendRaw mySender;
 #define RAW_DATA_LEN 68
-uint16_t powerOnOff[RAW_DATA_LEN] = {
+const uint16_t powerOnOff[RAW_DATA_LEN] = {
   8550, 4306, 530, 1606, 530, 566, 502, 1610,
   530, 566, 502, 574, 506, 1630, 506, 566,
   506, 1630, 506, 566, 502, 1610, 530, 566,
@@ -19,7 +19,7 @@ uint16_t powerOnOff[RAW_DATA_LEN] = {
   558, 1578, 562, 1000
 };
 
-uint16_t sourceCD[RAW_DATA_LEN] = {
+const uint16_t sourceCD[RAW_DATA_LEN] = {
   8546, 4310, 558, 1578, 562, 538, 498, 1638,
   530, 542, 506, 570, 502, 1634, 502, 570,
   498, 1638, 534, 538, 498, 1638, 530, 542,
@@ -43,7 +43,7 @@ uint16_t sourceCD[RAW_DATA_LEN] = {
 //  506, 1630, 510, 1000
 //};
 
-uint16_t sourceCDR[RAW_DATA_LEN] = {
+const uint16_t sourceCDR[RAW_DATA_LEN] = {
   8550, 4306, 530, 1606, 534, 566, 502, 1606,
   534, 566, 502, 570, 510, 1602, 526, 570,
   510, 1602, 534, 566, 502, 1606, 534, 566,
@@ -56,7 +56,7 @@ uint16_t sourceCDR[RAW_DATA_LEN] = {
 };
 
 //Set up array of codes
-uint16_t *sources[3] = {powerOnOff, sourceCD, sourceCDR};//, sourceAUX};
+const uint16_t *sources[3] = {powerOnOff, sourceCD, sourceCDR};//, sourceAUX};
 
 
 //This causes some sort of horrible crash - maybe an overflow of the uint16 data type?
@@ -134,7 +134,7 @@ elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
 // ====CONTROL VARIABLES====
-bool debugMode = true;
+bool debugMode = false;
 
 void sendCode(int myChannel) {
 //  debug("sending code", -1);
@@ -156,7 +156,7 @@ int findActiveChannel() {   //returns first active channel in the array or 0 if 
   return myChannel;
 } //END findActiveChannel()
 
-void debug(String message="                           ", int val=0) {
+void debug(String message="", int val=0) {
   
   if (debugMode) {
     Serial.print(message);
@@ -164,18 +164,57 @@ void debug(String message="                           ", int val=0) {
   }
 } //END debug()
 
+
+#ifdef __arm__
+// should use uinstd.h to define sbrk but Due causes a conflict
+extern "C" char* sbrk(int incr);
+#else  // __ARM__
+extern char *__brkval;
+#endif  // __arm__
+ 
+int freeMemory() {
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char*>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif  // __arm__
+}
+
+
+void flashStatus(int number=5, int len=100) {
+  for (int i=0; i < number; i++) {
+    digitalWrite(statusLight, true);
+    delay(len);
+    digitalWrite(statusLight, false);
+    delay(len/2);
+  }
+}
+
+
 void setup() {
   delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
+  debugMode = false;
   //  ====PIN SETUP====
   pinMode(statusLight, OUTPUT);
   pinMode(debugPin, INPUT);
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
 
+  if (digitalRead(debugPin)) {
+    debugMode = true;
+  }
+
   if (debugMode) {
     Serial.begin(9600);
     delay(2000);
-    debug("starting up ", -1);
+    Serial.print(F("debug mode: "));
+    Serial.println(digitalRead(debugPin));
+    debug(F("starting up "), -1);
+    flashStatus();
+    debug(F("Free mem: "), freeMemory);
   }
 
   // ====INIT VARIABLES====
@@ -185,6 +224,7 @@ void setup() {
   }
 
 }
+
 
 void loop() {
   int activeChannel = 0;
@@ -216,14 +256,14 @@ void loop() {
 
     //DEBUGGING - show countdown to channel release
     if(channelReleaseTimer < channelReleaseTimeOut and counter >= 500) {
-      debug("Channel became inactive: ", currentChannel);
-      debug("     releasing in: ", channelReleaseTimeOut - channelReleaseTimer);
+      debug(F("Channel became inactive: "), currentChannel);
+      debug(F("\treleasing in: "), channelReleaseTimeOut - channelReleaseTimer);
     } 
     //END DEBUGGING
 
     if (activeChannel != currentChannel and channelReleaseTimer >=channelReleaseTimeOut) {      //change channel 
-      debug("Changing channel from: ", currentChannel);
-      debug("Changing channel to: ", activeChannel);
+      debug(F("Changing channel from: "), currentChannel);
+      debug(F("Changing channel to: "), activeChannel);
       currentChannel = activeChannel;
       powerTimer = 0; 
     }
@@ -236,23 +276,41 @@ void loop() {
 
   if (previousChannel != currentChannel) {      //check for a channel change and send appropriate codes
     if (previousChannel == 0) {     //state change from off to on
-      digitalWrite(statusLight, true);
-      debug("power state change -> ON ", -1);
+      if (debugMode) {
+        digitalWrite(statusLight, true);
+      }
+      
+      flashStatus(5, 250);
+      
+      debug(F("power state change -> ON "), -1);
+      debug(F("Free mem: "), freeMemory());
       sendCode(0);
-      debug("     delaying for reciver to power up: ", powerOnDelay);
+      debug(F("Free mem: "), freeMemory());
+      debug(F("\tdelaying for reciver to power up: "), powerOnDelay);
       delay(powerOnDelay);
       previousChannel = currentChannel;
     }
 
     if (currentChannel < 1 and powerTimer >= powerTimeOut) {
-      digitalWrite(statusLight, false);
-      debug("power state change -> OFF ", -1);
+      if (debugMode) {
+        digitalWrite(statusLight, false);
+      }
+       
+      flashStatus(5, 500);
+      
+      debug(F("power state change -> OFF "), -1);
+      debug(F("Free mem: "), freeMemory());
       sendCode(0);     
+      debug(F("Free mem: "), freeMemory());
       previousChannel = currentChannel;
     }
     
     if (currentChannel > 0) {
+      debug(F("Send channel change: "), currentChannel);
+      debug(F("Free mem: "), freeMemory());
+      flashStatus(3, 250);
       sendCode(currentChannel);
+      debug(F("Free mem: "), freeMemory());
       previousChannel = currentChannel;
     }
 
@@ -261,8 +319,8 @@ void loop() {
   
   if (counter >= heartBeat) {
 //    sendCode(0);
-    Serial.println("HeartBeat....");
-    debug("\nheartBeat ", -1);
+//    Serial.println(F("HeartBeat...."));
+    debug(F("\nheartBeat "), -1);
     counter = 0;
   }
 
