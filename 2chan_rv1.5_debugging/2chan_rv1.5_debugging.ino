@@ -109,7 +109,7 @@ const uint16_t *sources[3] = {powerOnOff, sourceCD, sourceCDR};//, sourceAUX};
 const int audioPin1 = A1;     //Channel 1
 const int audioPin2 = A2;
 const int debugPin = A3;     //when low, run in debug mode
-const int statusLight = 10;   //active channel indicator light
+const int statusLightPin = 10;   //active channel indicator light
 
 
 //  ====CHANNEL MEASUREMENTS====
@@ -135,6 +135,7 @@ elapsedMillis powerTimer = 0;
 
 // ====CONTROL VARIABLES====
 bool debugMode = false;
+bool statusLight = false;
 
 void sendCode(int myChannel) {
 //  debug("sending code", -1);
@@ -186,11 +187,12 @@ int freeMemory() {
 
 void flashStatus(int number=5, int len=100) {
   for (int i=0; i < number; i++) {
-    digitalWrite(statusLight, true);
+    digitalWrite(statusLightPin, true);
     delay(len);
-    digitalWrite(statusLight, false);
+    digitalWrite(statusLightPin, false);
     delay(len/2);
   }
+  digitalWrite(statusLightPin, statusLight);
 }
 
 
@@ -198,7 +200,7 @@ void setup() {
   delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
   debugMode = false;
   //  ====PIN SETUP====
-  pinMode(statusLight, OUTPUT);
+  pinMode(statusLightPin, OUTPUT);
   pinMode(debugPin, INPUT);
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
@@ -207,14 +209,17 @@ void setup() {
     debugMode = true;
   }
 
+  flashStatus();
+  
   if (debugMode) {
     Serial.begin(9600);
     delay(2000);
     Serial.print(F("debug mode: "));
     Serial.println(digitalRead(debugPin));
+    statusLight = true;
     debug(F("starting up "), -1);
-    flashStatus();
     debug(F("Free mem: "), freeMemory);
+    
   }
 
   // ====INIT VARIABLES====
@@ -276,11 +281,11 @@ void loop() {
 
   if (previousChannel != currentChannel) {      //check for a channel change and send appropriate codes
     if (previousChannel == 0) {     //state change from off to on
-      if (debugMode) {
-        digitalWrite(statusLight, true);
+      if (debugMode) {      //in debug mode turn the status light on
+        statusLight = true;
       }
       
-      flashStatus(5, 250);
+      flashStatus(2, 500);      //2 slow pulses to indicate power on
       
       debug(F("power state change -> ON "), -1);
       debug(F("Free mem: "), freeMemory());
@@ -293,10 +298,10 @@ void loop() {
 
     if (currentChannel < 1 and powerTimer >= powerTimeOut) {
       if (debugMode) {
-        digitalWrite(statusLight, false);
+        statusLight = false;
       }
        
-      flashStatus(5, 500);
+      flashStatus(3, 500);      //3 slow pulses to indicate power off
       
       debug(F("power state change -> OFF "), -1);
       debug(F("Free mem: "), freeMemory());
@@ -308,8 +313,12 @@ void loop() {
     if (currentChannel > 0) {
       debug(F("Send channel change: "), currentChannel);
       debug(F("Free mem: "), freeMemory());
-      flashStatus(3, 250);
+      flashStatus(3, 100);      //3 fast pulses to indicate channel change
       sendCode(currentChannel);
+      for (int i=0; i < 3; i++) {     //repeat 3 times
+        flashStatus(currentChannel, 500);     //flash the current channel 
+        delay(800);
+      }
       debug(F("Free mem: "), freeMemory());
       previousChannel = currentChannel;
     }
