@@ -127,8 +127,8 @@ const int audioThreshold = 15;      //minimum value for an "active" channel
 //  ====TIMERS===
 int counter = 0;
 const int heartBeat = 500;
-int channelReleaseTimeOut = 5000;      //time to wait before releasing an inactive timer
-int powerTimeOut = 10000;       //time to wait before turnning off
+int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
+long powerTimeOut = 600000;       //time to wait before turnning off (10 min)
 int powerOnDelay = 7000;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
@@ -201,11 +201,11 @@ void setup() {
   debugMode = false;
   //  ====PIN SETUP====
   pinMode(statusLightPin, OUTPUT);
-  pinMode(debugPin, INPUT);
+//  pinMode(debugPin, INPUT);
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
 
-  if (digitalRead(debugPin)) {
+  if (!digitalRead(debugPin)) {
     debugMode = true;
   }
 
@@ -217,7 +217,13 @@ void setup() {
     Serial.print(F("debug mode: "));
     Serial.println(digitalRead(debugPin));
     statusLight = true;
-    debug(F("starting up "), -1);
+    debug(F("starting up in debug mode "), -1);
+    powerTimeOut = 10000;
+    channelReleaseTimeOut = 5000;
+    
+    debug(F("decreasing powerTimeOut to: "), powerTimeOut);
+    debug(F("decreasing channelReleaseTimeOut to: "), channelReleaseTimeOut);
+    
     debug(F("Free mem: "), freeMemory);
     
   }
@@ -317,7 +323,7 @@ void loop() {
       sendCode(currentChannel);
       for (int i=0; i < 3; i++) {     //repeat 3 times
         flashStatus(currentChannel, 500);     //flash the current channel 
-        delay(800);
+        delay(1500);      //delay 1.5 seconds between each flash
       }
       debug(F("Free mem: "), freeMemory());
       previousChannel = currentChannel;
