@@ -108,7 +108,7 @@ const uint16_t *sources[3] = {powerOnOff, sourceCD, sourceCDR};//, sourceAUX};
 // ====PIN ASSIGNMENTS====
 const int audioPin1 = A1;     //Channel 1
 const int audioPin2 = A2;
-const int debugPin = A3;     //when low, run in debug mode
+const int debugPin = A3;     //when debug jumper is attached, pin is LOW (false); when off pin is HIGH (true)
 const int statusLightPin = 10;   //active channel indicator light
 
 
@@ -205,18 +205,16 @@ void setup() {
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
 
-  if (!digitalRead(debugPin)) {
+  if (digitalRead(debugPin) == false) {     //debugPin is attached, circuit is LOW - FALSE
     debugMode = true;
   }
 
   flashStatus();
   
-  if (debugMode) {
+  if (debugMode == true) {      //start serial connection
     Serial.begin(9600);
     delay(2000);
-    Serial.print(F("debug mode: "));
-    Serial.println(digitalRead(debugPin));
-    statusLight = true;
+    statusLight = true;       //set default state for status light
     debug(F("starting up in debug mode "), -1);
     powerTimeOut = 10000;
     channelReleaseTimeOut = 5000;
