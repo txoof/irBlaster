@@ -35,7 +35,18 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   510, 1602, 526, 1610, 526, 1606, 534, 1602,
   534, 566, 502, 1610, 530, 1602, 534, 1602,
   526, 574, 506, 1000}};
-  
+
+//const uint16_t powerOnOff[RAW_DATA_LEN] = 
+//   {8550, 4306, 530, 1606, 530, 566, 502, 1610, //power on/off
+////  530, 566, 502, 574, 506, 1630, 506, 566,
+////  506, 1630, 506, 566, 502, 1610, 530, 566,
+////  502, 1634, 506, 1606, 530, 570, 498, 1634,
+////  506, 570, 510, 562, 506, 566, 502, 1634,
+////  506, 1606, 530, 1610, 530, 562, 538, 538,
+////  530, 542, 538, 1598, 538, 1570, 558, 542,
+////  538, 538, 530, 542, 538, 1598, 530, 1578,
+////  558, 1578, 562, 1000}
+//  
 
 
 
@@ -56,7 +67,11 @@ void loop() {
       //send a code every time a character is received from the 
       // serial port. You could modify this sketch to send when you
       // push a button connected to an digital input pin.
-      mySender.send(sources[0],RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
+      uint16_t myCode[RAW_DATA_LEN];
+      for (int i = 0; i < RAW_DATA_LEN; i++) {
+        myCode[i] = pgm_read_word_near(sources[0] + i); 
+      }
+      mySender.send(myCode,RAW_DATA_LEN,36);//Pass the buffer,length, optionally frequency
       Serial.println(F("Sent signal."));
     }
 
