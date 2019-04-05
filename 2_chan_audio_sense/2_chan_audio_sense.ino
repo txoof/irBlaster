@@ -97,17 +97,21 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
 
 // ====PIN ASSIGNMENTS====
 const int audioPin1 = A1;     //Channel 1
-const int audioPin2 = A2;
-const int debugPin = A3;     //when debug jumper is attached, pin is LOW (false); when off pin is HIGH (true)
-const int statusLightPin = 10;   //active channel indicator light
+const int audioPin2 = A6;
+const int debugPin = A0;     //when debug jumper is attached, pin is LOW (false); when off pin is HIGH (true)
+const int chOne = 5;
+const int chTwo = 6;
+const int statusLightPin = 13;   //active channel indicator light (onboard LED)
 
 
 //  ====CHANNEL MEASUREMENTS====
 # define CHANNELS 3     //number of channels to sample from
 int audioChannels[CHANNELS] = {audioPin1, audioPin1, audioPin2};      //element 0 will be ignored
 int channelValues[CHANNELS] = {0, 0, 0};
+int channelStatus[CHANNELS] = {chOne, chOne, chTwo};      //element 0 will be ignored
 const int SAMPLES = 300;
 movingAvg audioAverages[CHANNELS] = {movingAvg(SAMPLES), movingAvg(SAMPLES), movingAvg(SAMPLES)};
+
 
 //  ====CHANNEL VARIABLES====
 int currentChannel = 0;     //channel that is currently active (0 is off)
@@ -192,16 +196,17 @@ void flashStatus(int number=5, int len=100) {
 
 void setup() {
   delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
-  debugMode = false;
+  debugMode = true;
   //  ====PIN SETUP====
   pinMode(statusLightPin, OUTPUT);
 //  pinMode(debugPin, INPUT);
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
+  pinMode(chOne, OUTPUT);
+  pinMode(chTwo, OUTPUT);
 
-  if (digitalRead(debugPin) == false) {     //debugPin is attached, circuit is LOW - FALSE
-    debugMode = true;
-  }
+
+  debugMode = !digitalRead(debugPin);     //debug pin pulls high when not connected
 
   flashStatus();
   
@@ -230,26 +235,35 @@ void setup() {
 
 
 void loop() {
+  debugMode = !digitalRead(debugPin);
 //  const String sources_str[3] = {"", "CD", "CDR"};
   int activeChannel = 0;
   for (int i=0; i < CHANNELS; i++) {      //sample channels
     int audioValue = 0;
+    bool chStat = false;
     if (i > 0) {      //only sample channels > 0
       audioValue = analogRead(audioChannels[i]) - 512;      //voltage divider on amp circuit shifts all values +512 (2.5V)
       audioValue = abs(audioValue);     //abs() funciton is actually a macro; needs to be on own line
       channelValues[i] = audioAverages[i].reading(audioValue);    //update and store the moving average for each channel
+
+      
+      if (channelValues[i] >= audioThreshold and debugMode) {
+        chStat = true;
+      } 
+
+      digitalWrite(channelStatus[i], chStat);
     }
     
-//    if (counter >= heartBeat) {
-//      debug("channel: ", i);
-//      debug("    audioValue: ", audioValue);
-//      debug("           avg: ", channelValues[i]);
-//    } 
+    if (counter >= heartBeat and debugMode) {
+      debug(F("channel: "), i);
+      debug(F("    audioValue: "), audioValue);
+      debug(F("           avg: "), channelValues[i]);
+    } 
   }     //end sample channels
   
-//  if (counter >= heartBeat) {
-//    debug("======================", -1);
-//  }
+  if (counter >= heartBeat and debugMode) {
+    debug(F("======================"), -1);
+  }
 
 
   if (channelValues[currentChannel] >= audioThreshold) {      //reset the channel release timer if the current channel is active
