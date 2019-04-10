@@ -97,10 +97,11 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
 
 // ====PIN ASSIGNMENTS====
 const int audioPin1 = A1;     //Channel 1
-const int audioPin2 = A6;
-const int debugPin = A0;     //when debug jumper is attached, pin is LOW (false); when off pin is HIGH (true)
-const int chOne = 5;
-const int chTwo = 6;
+const int audioPin2 = A6;     //Channel 2
+const int debugPin = A0;      //when debug jumper is attached, pin is LOW (false); when off pin is HIGH (true)
+const int chOne = A4;
+const int chTwo = A3;
+const int irRec = A5;
 const int statusLightPin = 13;   //active channel indicator light (onboard LED)
 
 
