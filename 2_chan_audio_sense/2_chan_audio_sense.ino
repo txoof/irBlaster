@@ -3,9 +3,6 @@
 #include <IRLib_HashRaw.h>    //Only use raw sender
 #include <elapsedMillis.h>    //measure elapsed time
 
-//keep the global variable usage below ~390 bytes for this to run correctly
-
-
 // ====REMOTE CODES====
 //define the IR Sender
 IRsendRaw mySender;
@@ -32,16 +29,27 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   554, 546, 502, 1610, 558, 1574, 554, 546,
   502, 570, 510, 1602, 526, 1610, 526, 574,
   506, 1602, 526, 1000},
+  
+  {8550, 4306, 530, 1606, 522, 574, 506, 1606, //source AUX 
+  526, 570, 510, 566, 502, 1630, 510, 566, 
+  502, 1630, 510, 566, 502, 1634, 506, 566, 
+  502, 1634, 506, 1602, 526, 574, 506, 1630, 
+  498, 574, 506, 1630, 498, 1610, 530, 1606, 
+  530, 1606, 526, 570, 538, 538, 534, 1598, 
+  538, 538, 534, 538, 530, 542, 538, 538, 
+  534, 538, 530, 1606, 534, 1602, 534, 538, 
+  534, 1602, 534, 1000}};
+//  {8550, 4306, 530, 1606, 534, 566, 502, 1606,  //source CDR
+//  534, 566, 502, 570, 510, 1602, 526, 570,
+//  510, 1602, 534, 566, 502, 1606, 534, 566,
+//  506, 1602, 530, 1606, 534, 566, 502, 1610,
+//  530, 570, 498, 574, 506, 566, 502, 570,
+//  510, 1602, 526, 570, 510, 566, 502, 570,
+//  510, 1602, 526, 1610, 526, 1606, 534, 1602,
+//  534, 566, 502, 1610, 530, 1602, 534, 1602,
+//  526, 574, 506, 1000}};
 
-  {8550, 4306, 530, 1606, 534, 566, 502, 1606,  //source CDR
-  534, 566, 502, 570, 510, 1602, 526, 570,
-  510, 1602, 534, 566, 502, 1606, 534, 566,
-  506, 1602, 530, 1606, 534, 566, 502, 1610,
-  530, 570, 498, 574, 506, 566, 502, 570,
-  510, 1602, 526, 570, 510, 566, 502, 570,
-  510, 1602, 526, 1610, 526, 1606, 534, 1602,
-  534, 566, 502, 1610, 530, 1602, 534, 1602,
-  526, 574, 506, 1000}};
+
 
 //const uint16_t powerOnOff[RAW_DATA_LEN] = {
 //  8550, 4306, 530, 1606, 530, 566, 502, 1610,
@@ -123,8 +131,8 @@ const int audioThreshold = 15;      //minimum value for an "active" channel
 int counter = 0;
 const int heartBeat = 500;
 int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
-long powerTimeOut = 600000;       //time to wait before turnning off (10 min)
-int powerOnDelay = 7000;
+long powerTimeOut = 300000;       //time to wait before turnning off (10 min)
+int powerOnDelay = 700;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
@@ -217,7 +225,7 @@ void setup() {
     statusLight = true;       //set default state for status light - always on when active in debug mode
     debug(F("starting up in debug mode "), -1);
     powerTimeOut = 10000;
-    channelReleaseTimeOut = 5000;
+    channelReleaseTimeOut = 10000;
     
     debug(F("decreasing powerTimeOut to: "), powerTimeOut);
     debug(F("decreasing channelReleaseTimeOut to: "), channelReleaseTimeOut);
@@ -349,7 +357,5 @@ void loop() {
 
   counter++;
   delay(2);
-  
-  
 
 }
