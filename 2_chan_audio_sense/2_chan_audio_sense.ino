@@ -125,7 +125,7 @@ int counter = 0;
 const int heartBeat = 500;
 int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
 long powerTimeOut = 600000;       //time to wait before turnning off (10 min)
-int powerOnDelay = 7000;
+int powerOnDelay = 3000;          //time to wait for amp to power on
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
@@ -197,7 +197,7 @@ void flashStatus(int number=5, int len=100) {
 
 
 void setup() {
-  delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
+  delay(500); //delay in case of runaway loop - allow programmer time to interrupt
   debugMode = true;
   //  ====PIN SETUP====
   pinMode(statusLightPin, OUTPUT);
@@ -211,10 +211,11 @@ void setup() {
   debugMode = !digitalRead(debugPin);     //debug pin pulls high when not connected
 
   flashStatus();
+  Serial.begin(9600);
+  delay(2000);
   
   if (debugMode == true) {      //start serial connection
-    Serial.begin(9600);
-    delay(2000);
+
     statusLight = true;       //set default state for status light - always on when active in debug mode
     debug(F("starting up in debug mode "), -1);
     powerTimeOut = 10000;

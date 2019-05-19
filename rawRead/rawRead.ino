@@ -10,7 +10,7 @@
 IRrecvPCI myReceiver(13);//pin number for the receiver
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(9600);Â
   delay(2000); while (!Serial); //delay for Leonardo
   myReceiver.enableIRIn(); // Start the receiver
   Serial.println(F("Ready to receive IR signals"));
