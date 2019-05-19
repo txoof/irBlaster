@@ -12,6 +12,7 @@ IRsendRaw mySender;
 
 //Raw IR codes read with ../rawRead/rawRead.ino
 #define RAW_DATA_LEN 68
+// move into progmem
 const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   {{8550, 4306, 530, 1606, 530, 566, 502, 1610, //power on/off
   530, 566, 502, 574, 506, 1630, 506, 566,

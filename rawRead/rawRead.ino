@@ -1,4 +1,4 @@
-/* rawR&cv.ino Example sketch for IRLib2
+ /* rawR&cv.ino Example sketch for IRLib2
  *  Illustrate how to capture raw timing values for an unknow protocol.
  *  You will capture a signal using this sketch. It will output data the 
  *  serial monitor that you can cut and paste into the "rawSend.ino"
@@ -7,7 +7,7 @@
 // Recommend only use IRLibRecvPCI or IRLibRecvLoop for best results
 #include <IRLibRecvPCI.h> 
 
-IRrecvPCI myReceiver(2);//pin number for the receiver
+IRrecvPCI myReceiver(13);//pin number for the receiver
 
 void setup() {
   Serial.begin(9600);
