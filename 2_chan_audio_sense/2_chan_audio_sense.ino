@@ -9,7 +9,6 @@ IRsendRaw mySender;
 
 //Raw IR codes read with ../rawRead/rawRead.ino
 #define RAW_DATA_LEN 68
-// move into progmem
 const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   {{8550, 4306, 530, 1606, 530, 566, 502, 1610, //power on/off
   530, 566, 502, 574, 506, 1630, 506, 566,
@@ -40,6 +39,7 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
 //  538, 538, 534, 538, 530, 542, 538, 538, 
 //  534, 538, 530, 1606, 534, 1602, 534, 538, 
 //  534, 1602, 534, 1000}};
+  
   {8550, 4306, 530, 1606, 534, 566, 502, 1606,  //source CDR
   534, 566, 502, 570, 510, 1602, 526, 570,
   510, 1602, 534, 566, 502, 1606, 534, 566,
@@ -126,19 +126,14 @@ movingAvg audioAverages[CHANNELS] = {movingAvg(SAMPLES), movingAvg(SAMPLES), mov
 //  ====CHANNEL VARIABLES====
 int currentChannel = 0;     //channel that is currently active (0 is off)
 int previousChannel = 0;    //channel that was active before change (0 is off)
-const int audioThreshold = 15;      //minimum value for an "active" channel
+const int audioThreshold = 20;      //minimum value for an "active" channel
 
 //  ====TIMERS===
 int counter = 0;
 const int heartBeat = 500;
 int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
-<<<<<<< HEAD
-long powerTimeOut = 600000;       //time to wait before turnning off (10 min)
-int powerOnDelay = 3000;          //time to wait for amp to power on
-=======
 long powerTimeOut = 300000;       //time to wait before turnning off (10 min)
 int powerOnDelay = 700;
->>>>>>> ccc0883d9e84d033a374be7cf3b5c3b62af20f3b
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
@@ -210,11 +205,11 @@ void flashStatus(int number=5, int len=100) {
 
 
 void setup() {
-  delay(500); //delay in case of runaway loop - allow programmer time to interrupt
-  debugMode = true;
+  delay(1000); //delay in case of runaway loop - allow programmer time to interrupt
+  debugMode = false;
   //  ====PIN SETUP====
   pinMode(statusLightPin, OUTPUT);
-//  pinMode(debugPin, INPUT);
+  pinMode(debugPin, INPUT_PULLUP); //set pin to high impeadance mode (HIGH when not connected)
   pinMode(audioPin1, INPUT);
   pinMode(audioPin2, INPUT);
   pinMode(chOne, OUTPUT);
@@ -224,10 +219,11 @@ void setup() {
   debugMode = !digitalRead(debugPin);     //debug pin pulls high when not connected
 
   flashStatus();
+
   Serial.begin(9600);
   delay(2000);
   
-  if (debugMode == true) {      //start serial connection
+  if (debugMode == true) { 
 
     statusLight = true;       //set default state for status light - always on when active in debug mode
     debug(F("starting up in debug mode "), -1);
@@ -271,6 +267,7 @@ void loop() {
     }
     
     if (counter >= heartBeat and debugMode) {
+      debug(F("debugMode: "), debugMode);
       debug(F("channel: "), i);
       debug(F("    audioValue: "), audioValue);
       debug(F("           avg: "), channelValues[i]);
