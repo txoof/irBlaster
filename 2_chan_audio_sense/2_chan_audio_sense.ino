@@ -132,8 +132,8 @@ const int audioThreshold = 20;      //minimum value for an "active" channel
 int counter = 0;
 const int heartBeat = 500;
 int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
-long powerTimeOut = 300000;       //time to wait before turnning off (10 min)
-int powerOnDelay = 700;
+long powerTimeOut = 150000;       //time to wait before turnning off (5 min)
+int powerOnDelay = 200;
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
@@ -267,7 +267,6 @@ void loop() {
     }
     
     if (counter >= heartBeat and debugMode) {
-      debug(F("debugMode: "), debugMode);
       debug(F("channel: "), i);
       debug(F("    audioValue: "), audioValue);
       debug(F("           avg: "), channelValues[i]);
@@ -355,7 +354,7 @@ void loop() {
 
   
   if (counter >= heartBeat) {
-    debug(F("\nheartBeat "), -1);
+    debug(F("\nheartBeat "), -0);
     counter = 0;
   }
 
