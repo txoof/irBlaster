@@ -9,6 +9,10 @@ IRsendRaw mySender;
 
 //Raw IR codes read with ../rawRead/rawRead.ino
 #define RAW_DATA_LEN 68
+/* 
+store the remote codes in PROGMEM; remote codes in regular memory causes
+all sorts of weird runtime errors as the arduino runs out of memory
+*/
 const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   {{8550, 4306, 530, 1606, 530, 566, 502, 1610, //power on/off
   530, 566, 502, 574, 506, 1630, 506, 566,
@@ -49,7 +53,6 @@ const uint16_t sources[3][RAW_DATA_LEN] PROGMEM =
   510, 1602, 526, 1610, 526, 1606, 534, 1602,
   534, 566, 502, 1610, 530, 1602, 534, 1602,
   526, 574, 506, 1000}};
-
 
 
 //const uint16_t powerOnOff[RAW_DATA_LEN] = {
@@ -119,21 +122,27 @@ const int statusLightPin = 13;   //active channel indicator light (onboard LED)
 int audioChannels[CHANNELS] = {audioPin1, audioPin1, audioPin2};      //element 0 will be ignored
 int channelValues[CHANNELS] = {0, 0, 0};
 int channelStatus[CHANNELS] = {chOne, chOne, chTwo};      //element 0 will be ignored
-const int SAMPLES = 300;
+const int SAMPLES = 300; //this is the maximum; larger SAMPLES value causes memory issues
 movingAvg audioAverages[CHANNELS] = {movingAvg(SAMPLES), movingAvg(SAMPLES), movingAvg(SAMPLES)};
 
 
 //  ====CHANNEL VARIABLES====
 int currentChannel = 0;     //channel that is currently active (0 is off)
 int previousChannel = 0;    //channel that was active before change (0 is off)
+/*
+ * Tested values:
+ * 20 - too high, quite songs cut out
+ * 15 -
+ */
 const int audioThreshold = 20;      //minimum value for an "active" channel
+
 
 //  ====TIMERS===
 int counter = 0;
 const int heartBeat = 500;
-int channelReleaseTimeOut = 15000;      //time to wait before releasing an inactive timer (15 seconds)
-long powerTimeOut = 150000;       //time to wait before turnning off (5 min)
-int powerOnDelay = 200;
+int channelReleaseTimeOut = 60000;      //time to wait before releasing an inactive timer (60 seconds)
+long powerTimeOut = 300000;       //time to wait before turnning off (5 min)
+int powerOnDelay = 200;           //wait for the receiver to become active 
 elapsedMillis channelReleaseTimer = 0;
 elapsedMillis powerTimer = 0;
 
@@ -172,25 +181,6 @@ int findActiveChannel() {   //returns first active channel in the array or 0 if 
   }
   return myChannel;
 } //END findActiveChannel()
-
-
-//#ifdef __arm__
-//// should use uinstd.h to define sbrk but Due causes a conflict
-//extern "C" char* sbrk(int incr);
-//#else  // __ARM__
-//extern char *__brkval;
-//#endif  // __arm__
-// 
-//int freeMemory() {
-//  char top;
-//#ifdef __arm__
-//  return &top - reinterpret_cast<char*>(sbrk(0));
-//#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
-//  return &top - __brkval;
-//#else  // __arm__
-//  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
-//#endif  // __arm__
-//}
 
 
 void flashStatus(int number=5, int len=100) {
@@ -249,7 +239,7 @@ void setup() {
 void loop() {
   debugMode = !digitalRead(debugPin);
 //  const String sources_str[3] = {"", "CD", "CDR"};
-  int activeChannel = 0;
+  int activeChannel = 0;    //set the default active channel 
   for (int i=0; i < CHANNELS; i++) {      //sample channels
     int audioValue = 0;
     bool chStat = false;
@@ -257,7 +247,6 @@ void loop() {
       audioValue = analogRead(audioChannels[i]) - 512;      //voltage divider on amp circuit shifts all values +512 (2.5V)
       audioValue = abs(audioValue);     //abs() funciton is actually a macro; needs to be on own line
       channelValues[i] = audioAverages[i].reading(audioValue);    //update and store the moving average for each channel
-
       
       if (channelValues[i] >= audioThreshold and debugMode) {
         chStat = true;
