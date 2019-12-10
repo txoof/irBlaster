@@ -1,4 +1,6 @@
 // Known good board version 1.6.21 prior to 10 December 2019
+// avrdude Version 6.3-20190619
+
 #include <movingAvg.h>    // moving average library
 #include <IRLibSendBase.h>    //We need the base code
 #include <IRLib_HashRaw.h>    //Only use raw sender
@@ -133,9 +135,9 @@ int previousChannel = 0;    //channel that was active before change (0 is off)
 /*
  * Tested values:
  * 20 - too high, quite songs cut out
- * 15 -
+ * 15 - good compromise
  */
-const int audioThreshold = 20;      //minimum value for an "active" channel
+const int audioThreshold = 15;      //minimum value for an "active" channel
 
 
 //  ====TIMERS===
@@ -223,6 +225,7 @@ void setup() {
     
     debug(F("decreasing powerTimeOut to: "), powerTimeOut);
     debug(F("decreasing channelReleaseTimeOut to: "), channelReleaseTimeOut);
+    debug(F("Version 10 Dec 2019"), -1);
     
 //    debug(F("Free mem: "), freeMemory);
     
