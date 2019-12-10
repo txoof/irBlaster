@@ -225,7 +225,7 @@ void setup() {
     
     debug(F("decreasing powerTimeOut to: "), powerTimeOut);
     debug(F("decreasing channelReleaseTimeOut to: "), channelReleaseTimeOut);
-    debug(F("Version 10 Dec 2019"), -1);
+    debug(F("Version 10122019.2"), -1);
     
 //    debug(F("Free mem: "), freeMemory);
     
