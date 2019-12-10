@@ -1,3 +1,4 @@
+// Known good board version 1.6.21 prior to 10 December 2019
 #include <movingAvg.h>    // moving average library
 #include <IRLibSendBase.h>    //We need the base code
 #include <IRLib_HashRaw.h>    //Only use raw sender
