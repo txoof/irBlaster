@@ -1,5 +1,6 @@
 // Known good board version 1.6.21 prior to 10 December 2019
 // avrdude Version 6.3-20190619
+// Set Board Type: Arduino Micro 5V
 
 #include <movingAvg.h>    // moving average library
 #include <IRLibSendBase.h>    //We need the base code
